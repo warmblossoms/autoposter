@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs
+      - /etc/nginx/vhost.d
+      - /usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    restart: always
+
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: acme-companion
+    depends_on:
+      - nginx-proxy
+    volumes:
+      - ./certs:/etc/nginx/certs
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /etc/nginx/vhost.d
+      - /usr/share/nginx/html
+    restart: always
+
+  autoposter:
+    build: .
+    container_name: autoposter
+    environment:
+      - VIRTUAL_HOST=yourdomain.com
+      - LETSENCRYPT_HOST=yourdomain.com
+      - LETSENCRYPT_EMAIL=youremail@example.com
+    expose:
+      - "8000"
+    restart: always
+
