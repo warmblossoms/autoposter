@@ -26,7 +26,6 @@ jobs:
     - name: Install Node Packages
       run: |
         cd node-media
-        npm init -y
         npm install axios sharp fluent-ffmpeg @ffmpeg-installer/ffmpeg
 
     - name: Install Python Packages
@@ -37,10 +36,23 @@ jobs:
       run: |
         echo "Starting autoposter job..."
         echo "$INPUT_JSON" > job.json
+
+        echo "Processing images..."
         node node-media/processImages.js "$(cat job.json)"
+
+        echo "Generating captions..."
         python python-caption/captionFormatter.py "$(cat job.json)"
+
+        echo "Generating blog..."
+        python python-caption/blogGenerator.py "$(cat job.json)"
+
+        echo "Generating reel..."
         node node-media/createReel.js "$(cat job.json)"
-        echo "Automation complete"
+
+        echo "Listing output files..."
+        ls -R output
+        
+        echo "Automation complete 🎯"
 
     env:
       INPUT_JSON: ${{ github.event.client_payload.input_json }}
