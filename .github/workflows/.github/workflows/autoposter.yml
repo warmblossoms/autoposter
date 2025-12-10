@@ -1,0 +1,46 @@
+name: AutoPoster Engine
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [start_autoposter_job]
+
+jobs:
+  run-automation:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Node Packages
+      run: |
+        cd node-media
+        npm init -y
+        npm install axios sharp fluent-ffmpeg @ffmpeg-installer/ffmpeg
+
+    - name: Install Python Packages
+      run: |
+        pip install google-api-python-client google-auth-oauthlib google-auth-httplib2
+
+    - name: Run Automation Scripts
+      run: |
+        echo "Starting autoposter job..."
+        echo "$INPUT_JSON" > job.json
+        node node-media/processImages.js "$(cat job.json)"
+        python python-caption/captionFormatter.py "$(cat job.json)"
+        node node-media/createReel.js "$(cat job.json)"
+        echo "Automation complete"
+
+    env:
+      INPUT_JSON: ${{ github.event.client_payload.input_json }}
